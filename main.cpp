@@ -1,118 +1,80 @@
-#include <iostream>
-#include <SDL.H>
-#include <stdio.h>
-#undef main
-using namespace std;
-//Screen dimension constants
-const int SCREEN_WIDTH = 1200;
-const int SCREEN_HEIGHT = 600;
+#include "stdafx.h"
+#include "FUNCTION.h"
+#include "BaseObject.h"
 
-//Starts up SDL and creates window
-bool init();
+BaseObject g_background;
 
-//Loads media
-bool loadMedia();
 
-//Frees media and shuts down SDL
-void close();
-
-//The window we'll be rendering to
-SDL_Window* gWindow = NULL;
-
-//The surface contained by the window
-SDL_Surface* gScreenSurface = NULL;
-
-//The image we will load and show on the screen
-SDL_Surface* gHelloWorld = NULL;
-
-bool init()
-{
-	//Initialization flag
+bool InitData() {
 	bool success = true;
-
-	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-	{
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+	int ret = SDL_Init(SDL_INIT_VIDEO);
+	if (ret < 0) return false;
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	g_window = SDL_CreateWindow("Tro Choi Ran San Moi",
+		                       SDL_WINDOWPOS_UNDEFINED, 
+	                       	   SDL_WINDOWPOS_UNDEFINED, 
+		                   SCREEN_WIDTH, SCREEN_HEIGHT,
+		                             SDL_WINDOW_SHOWN);
+	if (g_window == NULL) {
 		success = false;
 	}
-	else
-	{
-		//Create window
-		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (gWindow == NULL)
-		{
-			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-			success = false;
-		}
-		else
-		{
-			//Get window surface
-			gScreenSurface = SDL_GetWindowSurface(gWindow);
+	else {
+		g_screen = SDL_CreateRenderer(g_window, -1, SDL_RENDERER_ACCELERATED);
+		if (g_window == NULL) success = false;
+		else {
+			SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR);
+			int imgFlags = IMG_INIT_PNG;
+			if (!(IMG_Init(imgFlags) && imgFlags)){
+				success = false;
+			}
 		}
 	}
-
 	return success;
 }
+// them anh 
+bool LoadBackground() {
+	bool ret = g_background.LoadImg("hinhanh//bkground.png", g_screen);
+	if (ret == false) return false;
+	return true;
 
-bool loadMedia()
-{
-	//Loading success flag
-	bool success = true;
-
-	//Load splash image
-	gHelloWorld = SDL_LoadBMP("bkground.bmp");
-	if (gHelloWorld == NULL)
-	{
-		printf("Unable to load image %s! SDL Error: %s\n", "bkground.bmp", SDL_GetError());
-		success = false;
-	}
-
-	return success;
 }
 
-void close()
-{
-	//Deallocate surface
-	SDL_FreeSurface(gHelloWorld);
-	gHelloWorld = NULL;
-
-	//Destroy window
-	SDL_DestroyWindow(gWindow);
-	gWindow = NULL;
-
-	//Quit SDL subsystems
+void close() {
+	g_background.Free();
+	SDL_DestroyRenderer(g_screen);
+	g_screen = NULL;
+	SDL_DestroyWindow(g_window);
+	g_window = NULL;
+	IMG_Quit();
 	SDL_Quit();
+
+
+
 }
 
-int main(int argc, char* args[])
+
+int main(int argc, char* argv[]) {
+
+
+	if (InitData() == false) return -1;
+	if (LoadBackground() == false) return -1;
+
+	bool is_quit = false;
+
+	while (!is_quit) {
+		while (SDL_PollEvent(&g_event) != 0) {
+			if (g_event.type== SDL_QUIT)
 {
-	//Start up SDL and create window
-	if (!init())
-	{
-		printf("Failed to initialize!\n");
-	}
-	else
-	{
-		//Load media
-		if (!loadMedia())
-		{
-			printf("Failed to load media!\n");
+				is_quit = true;
+			}
 		}
-		else
-		{
-			//Apply the image
-			SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
+		SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR);
+		SDL_RenderClear(g_screen);
+		g_background.Render(g_screen, NULL);
+		SDL_RenderPresent(g_screen);
 
-			//Update the surface
-			SDL_UpdateWindowSurface(gWindow);
-
-			//Hack to get window to stay up
-			SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
-		}
 	}
 
-	//Free resources and close SDL
 	close();
 
 	return 0;
